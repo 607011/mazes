@@ -166,7 +166,7 @@
             parseFloat(el.pm.value),
             parseInt(el.seed.value),
             window.innerWidth - 20,
-            window.innerHeight - 20,
+            window.innerHeight - document.getElementById('menu').clientHeight - 20,
             regen
           )
           resolve()
@@ -210,7 +210,7 @@
 
 <body>
   <div class="App">
-    <div>
+    <div id="menu">
       <label for="maze-width">width</label>
       <input type="number" value="120" id="maze-width" name="maze-width" min="6" step="1" />
       <label for="maze-height">height</label>
