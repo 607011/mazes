@@ -17,7 +17,7 @@ input[type=number] {
   padding: 5px;
 }
 #maze-container {
-  padding: 5px;
+  margin-top: 5px;
 }
 :root {
   --maze-cols: 0;
