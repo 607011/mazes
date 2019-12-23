@@ -3,63 +3,49 @@
 
 <head>
   <title>Eller Maze</title>
+  <script type="text/javascript" src="../cell.js"></script>
   <script type="text/javascript" src="../mt.js"></script>
   <link rel="stylesheet" href="../maze.css">
   <script type="text/javascript">
     (function (window) {
       'use strict';
       const el = {}
-      let maze = [[]]
       let rng
 
-      const Direction = {
-        Top: 1,
-        Right: 2,
-        Bottom: 4,
-        Left: 8,
-      }
-
-      class Cell {
-
+      class EllerCell extends Cell {
         constructor(id) {
-          this.id = id
-          this.el = document.createElement('div')
-          this.el.className = 'block-bottom'
-          this.block = Direction.Bottom
+          super(id)
+          this.close(Direction.Bottom)
         }
-        openVertical() {
-          this.block &= ~Direction.Bottom
-          this.el.classList.remove('block-bottom')
+        openBottom() {
+          this.open(Direction.Bottom)
         }
         closeRight() {
-          this.block |= Direction.Right
-          this.el.classList.add('block-right')
-        }
-        blocked(direction) {
-          return (this.block & direction) === direction
+          this.close(Direction.Right)
         }
         toString() {
-          return `${this.id}${this.blocked(Direction.Bottom) ? '_' : ''}`
+          return `${this.id}${this.isBlocked(Direction.Bottom) ? '_' : ''}`
         }
       }
 
       class Row {
-        constructor(w) {
+        constructor(w, id) {
           this.w = w
+          this.id = id
           this.sets = []
         }
         generate1st(p) {
-          this.sets = Array.from(Array(this.w)).map((_, i) => [new Cell(i)])
+          this.sets = Array.from(Array(this.w)).map((_, i) => [new EllerCell(i)])
           this.merge(p)
         }
         selectDownPaths(p) {
           this.sets.forEach(set => {
             const selectedIdx = Math.floor(rng.random() * set.length)
-            set[selectedIdx].openVertical()
+            set[selectedIdx].openBottom()
             const q = p * (set.length - 1) / set.length
             set.forEach(cell => {
               if (rng.random() < q) {
-                cell.openVertical()
+                cell.openBottom()
               }
             })
           })
@@ -70,7 +56,7 @@
         generate(above) {
           const aboveRow = above.sets.flat()
           let nextId = aboveRow.map(el => el.id).reduce((maxId, currId) => Math.max(maxId, currId))
-          const newFlatSet = aboveRow.map(cell => new Cell(cell.blocked(Direction.Bottom) ? ++nextId : cell.id))
+          const newFlatSet = aboveRow.map(cell => new EllerCell(cell.isBlocked(Direction.Bottom) ? ++nextId : cell.id))
           this.sets = []
           let newSet = []
           let id = newFlatSet[0].id
@@ -122,8 +108,15 @@
        * @param {HTMLElement} mazeEl
        */
       const appendRow = (row, mazeEl) => {
-        row.sets.flat().forEach((cell, idx) => {
-          mazeEl.appendChild(cell.el)
+        row.sets.flat().forEach(cell => {
+          const cellEl = document.createElement('div')
+          if (cell.isBlocked(Direction.Bottom)) {
+            cellEl.classList.add('block-bottom')
+          }
+          if (cell.isBlocked(Direction.Right)) {
+            cellEl.classList.add('block-right')
+          }
+          mazeEl.appendChild(cellEl)
         })
       }
 
@@ -148,14 +141,15 @@
           mazeEl.id = 'maze'
           mazeEl.style.setProperty('--maze-cols', w)
           mazeEl.style.setProperty('--maze-rows', h)
-          let row = new Row(w)
+          let row = new Row(w, 0)
           row.generate1st(pm)
+          row.selectDownPaths(pv)
           appendRow(row, mazeEl)
           for (let y = 1; y < h; ++y) {
-            row.selectDownPaths(pv)
-            const nextRow = new Row(w)
+            const nextRow = new Row(w, y)
             nextRow.generate(row)
             nextRow.merge(pm)
+            nextRow.selectDownPaths(pv)
             appendRow(nextRow, mazeEl)
             row = nextRow
           }
@@ -188,7 +182,7 @@
         document.location.hash = `#w=${el.w.value};h=${el.h.value};pv=${el.pv.value};pm=${el.pm.value};seed=${el.seed.value}`
       }
 
-      const onHashChange = (evt) => {
+      const onHashChange = evt => {
         const t0 = new Date()
         redraw(true)
           .then(() => console.debug(`calculation took ${new Date() - t0} milliseconds.`))
@@ -210,7 +204,7 @@
         window.addEventListener('hashchange', onHashChange)
         window.addEventListener('resize', () => redraw(false))
         rng = new MersenneTwister(parseInt(el.seed.value))
-        redraw(true)
+        onHashChange()
       }
 
       window.addEventListener('load', init)
@@ -225,12 +219,12 @@
       <input type="number" value="120" id="maze-width" name="maze-width" min="6" step="1" />
       <label for="maze-height">height</label>
       <input type="number" value="120" id="maze-height" name="maze-height" min="6" step="1" />
-      <label for="pv">pv</label>
-      <input type="number" value="0.1" id="pv" name="pv" min="0" max="0.99" step="0.01" />
-      <label for="pm">pm</label>
+      <label for="pv">p<sub>&darr;</sub></label>
+      <input type="number" value="0" id="pv" name="pv" min="0" max="0.99" step="0.01" />
+      <label for="pm">p<sub>merge</sub></label>
       <input type="number" value="0.5" id="pm" name="pm" min="0.1" max="1" step="0.1" />
       <label for="seed">seed</label>
-      <input type="number" value="31337" id="seed" name="seed" min="0" max="9007199254740991" step="1" />
+      <input type="number" value="31337" id="seed" name="seed" min="0" max="4294967295" step="1" />
     </div>
     <div id="maze-container">
       <div id="maze"></div>
