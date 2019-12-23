@@ -28,7 +28,7 @@ class MersenneTwister {
       if (this.mti === MersenneTwister.N + 1) {
         this.seed(5489)
       }
-      for (let kk = 0; kk < MersenneTwister.N - MersenneTwister.M; ++kk) {
+      for (kk = 0; kk < MersenneTwister.N - MersenneTwister.M; ++kk) {
         y = (this.mt[kk] & MersenneTwister.UPPER_MASK) | (this.mt[kk + 1] & MersenneTwister.LOWER_MASK)
         this.mt[kk] = this.mt[kk + MersenneTwister.M] ^ (y >>> 1) ^ mag01[y & 1]
       }
