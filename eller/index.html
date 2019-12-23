@@ -34,11 +34,17 @@
           this.id = id
           this.sets = []
         }
-        generate1st(p) {
+        /**
+         * @param {Number} p probability to merge two adjacent (disjunct) sets (@see merge())
+         */
+         generate1st(p) {
           this.sets = Array.from(Array(this.w)).map((_, i) => [new EllerCell(i)])
           this.merge(p)
         }
-        selectDownPaths(p) {
+        /**
+         * @param {Number} p probability for each cell to become a path to the cell below 
+         */
+         selectDownPaths(p) {
           this.sets.forEach(set => {
             const selectedIdx = Math.floor(rng.random() * set.length)
             set[selectedIdx].openBottom()
@@ -51,7 +57,7 @@
           })
         }
         /**
-         * @param {Row} above
+         * @param {Row} above row from which to derive the generated row
          */
         generate(above) {
           const aboveRow = above.sets.flat()
@@ -74,7 +80,10 @@
             this.sets.push(newSet)
           }
         }
-        merge(p) {
+        /**
+         * @param {Number} p probability to merge two adjacent (disjunct) sets
+         */
+         merge(p) {
           const row = []
           let newId = 0
           let merged = this.sets.shift()

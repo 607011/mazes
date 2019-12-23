@@ -31,4 +31,3 @@ class Cell {
     return (this.block & direction) !== 0
   }
 }
-
