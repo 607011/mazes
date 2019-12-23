@@ -38,9 +38,15 @@ input[type=number] {
   height: var(--maze-a);
   text-align: center;
 }
-.hori {
+.block-top {
+  border-top: 1px solid #333;
+}
+.block-right {
   border-right: 1px solid #333;
 }
-.vert {
+.block-bottom {
   border-bottom: 1px solid #333;
+}
+.block-left {
+  border-left: 1px solid #333;
 }

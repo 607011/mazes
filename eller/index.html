@@ -12,24 +12,34 @@
       let maze = [[]]
       let rng
 
+      const Direction = {
+        Top: 1,
+        Right: 2,
+        Bottom: 4,
+        Left: 8,
+      }
+
       class Cell {
+
         constructor(id) {
           this.id = id
           this.el = document.createElement('div')
-          this.el.className = 'vert'
-          this.blockDown = true
-          this.blockRight = false
+          this.el.className = 'block-bottom'
+          this.block = Direction.Bottom
         }
         openVertical() {
-          this.blockDown = false
-          this.el.classList.remove('vert')
+          this.block &= ~Direction.Bottom
+          this.el.classList.remove('block-bottom')
         }
         closeRight() {
-          this.blockRight = true
-          this.el.classList.add('hori')
+          this.block |= Direction.Right
+          this.el.classList.add('block-right')
+        }
+        blocked(direction) {
+          return (this.block & direction) === direction
         }
         toString() {
-          return `${this.id}${this.blockDown ? '_' : ''}`
+          return `${this.id}${this.blocked(Direction.Bottom) ? '_' : ''}`
         }
       }
 
@@ -60,7 +70,7 @@
         generate(above) {
           const aboveRow = above.sets.flat()
           let nextId = aboveRow.map(el => el.id).reduce((maxId, currId) => Math.max(maxId, currId))
-          const newFlatSet = aboveRow.map(cell => new Cell(cell.blockDown ? ++nextId : cell.id))
+          const newFlatSet = aboveRow.map(cell => new Cell(cell.blocked(Direction.Bottom) ? ++nextId : cell.id))
           this.sets = []
           let newSet = []
           let id = newFlatSet[0].id
