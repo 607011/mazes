@@ -1,0 +1,46 @@
+* {
+  margin: 0;
+  padding: 0;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 12pt;
+  box-sizing: border-box;
+}
+body, html {
+  background-color: white;
+  color: black;
+}
+input[type=number] {
+  width: 4em;
+  text-align: right;
+}
+.App {
+  padding: 5px;
+}
+#maze-container {
+  padding: 5px;
+}
+:root {
+  --maze-cols: 0;
+  --maze-rows: 0;
+  --maze-a: 0;
+}  
+#maze {
+  display: grid;
+  column-gap: 0;
+  row-gap: 0;
+  grid-template-rows: repeat(var(--maze-rows), 1fr);
+  grid-template-columns: repeat(var(--maze-cols), 1fr);
+  border-left: 1px solid #333;
+  border-top: 1px solid #333;
+}
+#maze > div {
+  width: var(--maze-a);
+  height: var(--maze-a);
+  text-align: center;
+}
+.hori {
+  border-right: 1px solid #333;
+}
+.vert {
+  border-bottom: 1px solid #333;
+}

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Eller Maze</title>
+  <script type="text/javascript" src="../mt.js"></script>
+  <link rel="stylesheet" href="../maze.css">
+  <script type="text/javascript">
+  (function(window) {
+    'use strict';
+    const el = {}
+    let maze = [[]]
+    let rng
+
+    class Cell {
+      constructor(id) {
+        this.id = id
+        this.el = document.createElement('div')
+        this.el.className = 'vert'
+        this.blockDown = true
+        this.blockRight = false
+      }
+      openVertical() {
+        this.blockDown = false
+        this.el.classList.remove('vert')
+      }
+      closeRight() {
+        this.blockRight = true
+        this.el.classList.add('hori')
+      }
+      toString() {
+        return `${this.id}${this.blockDown ? '_' : ''}`
+      }
+    }
+
+    class Row {
+      constructor(id, w) {
+        this.id = id
+        this.w = w
+        this.sets = []
+      }
+      generate1st(p) {
+        // console.debug('Row.generate1st()')
+        this.sets = []
+        let currentSet = []
+        let id = 0
+        for (let x = 0; x < this.w; ++x) {
+          const cell = new Cell(id)
+          currentSet.push(cell)
+          if (rng.random() < p) {
+            cell.closeRight()
+            ++id
+            this.sets.push(currentSet)
+            currentSet = []
+          }
+        }
+        if (currentSet.length > 0) {
+          this.sets.push(currentSet)
+        }
+        const lastSet = this.sets[this.sets.length - 1]
+        lastSet[lastSet.length - 1].closeRight()
+        // console.debug(`result row = ${this}`)
+      }
+      selectDownPaths(p) {
+        // console.debug('selectDownPaths()')
+        for (const set of this.sets) {
+          const selectedIdx = Math.floor(rng.random() * set.length)
+          set[selectedIdx].openVertical()
+          const q = p * (set.length - 1) / set.length
+          for (const cell of set) {
+            if (rng.random() < q) {
+              cell.openVertical()
+            }
+          }
+        }
+        // console.debug(`result row = ${this}`)
+      }
+      /**
+       * @param {Row} above
+       */
+      generate(above) {
+        // console.debug('Row.generate()')
+        const aboveRow = above.sets.flat()
+        let nextId = aboveRow.map(el => el.id).reduce((maxId, currId) => Math.max(maxId, currId))
+        // console.debug(`nextId = ${nextId}`)
+        const newFlatSet = aboveRow.map(cell => new Cell(cell.blockDown ? ++nextId : cell.id))
+        // console.debug(`newFlatSet = ${newFlatSet}`)
+        this.sets = []
+        let newSet = []
+        let id = newFlatSet[0].id
+        for (const cell of newFlatSet) {
+          if (cell.id !== id) {
+            this.sets.push(newSet)
+            newSet = [cell]
+            id = cell.id
+          }
+          else {
+            newSet.push(cell)
+          }
+        }
+        if (newSet.length > 0) {
+          this.sets.push(newSet)
+        }
+        // console.debug(`result row = ${this}`)
+      }
+      merge(p) {
+        // console.debug('Row.merge()')
+        const row = []
+        let newId = 0
+        while (this.sets.length > 1) {
+          let merged
+          if (rng.random() < p) {
+            const a = this.sets.shift()
+            const b = this.sets.shift()
+            merged = [...a, ...b].flat()
+          }
+          else {
+            merged = this.sets.shift()
+          }
+          merged[merged.length - 1].closeRight()
+          merged.forEach(cell => cell.id = newId)
+          ++newId
+          row.push(merged)
+        }
+        if (this.sets.length > 0) {
+          const merged = this.sets.shift()
+          merged[merged.length - 1].closeRight()
+          merged.forEach(cell => cell.id = newId)
+          row.push(merged)
+        }
+        this.sets = row
+        // console.debug(`result row = ${this}`)
+      }
+      toString() {
+        return this.sets.map(set => `${set.map(c => `${c}`).join(' ')}`).join(' | ')
+      }
+    }
+
+    /**
+     * @param {Number} num
+     * @param {Row} row
+     * @param {HTMLElement} mazeEl
+     */
+    const appendRow = (num, row, mazeEl) => {
+      row.sets.flat().forEach((cell, idx) => {
+        mazeEl.appendChild(cell.el)
+      })
+    }
+
+    /**
+     * @param {Number} w
+     * @param {Number} h
+     * @param {Number} pv
+     * @param {Number} pm
+     * @param {Number} sx
+     * @param {Number} sy
+     * @param {Boolean} regen
+     */
+     const generate = (w, h, pv, pm, seed, sx, sy, regen) => {
+      const a = Math.min(sx / w, sy / h)
+      rng.seed(seed)
+      let mazeEl
+      if (!regen) {
+        mazeEl = document.getElementById('maze')
+      }
+      else {
+        mazeEl = document.createElement('div')
+        mazeEl.id = 'maze'
+        mazeEl.style.setProperty('--maze-cols', w)
+        mazeEl.style.setProperty('--maze-rows', h)
+        let row = new Row(0, w)
+        row.generate1st(0.5)
+        appendRow(0, row, mazeEl)
+        for (let y = 1; y < h; ++y) {
+          row.selectDownPaths(pv)
+          const nextRow = new Row(0, w)
+          nextRow.generate(row)
+          nextRow.merge(pm)
+          appendRow(y, nextRow, mazeEl)
+          row = nextRow
+        }
+        el.mazeContainer.replaceChild(mazeEl, el.maze)
+        el.maze = mazeEl
+      }
+      mazeEl.style.width = `${w * a}px`
+      mazeEl.style.height = `${h * a}px`
+      mazeEl.style.setProperty('--maze-a', `${a}px`)
+    }
+
+    const redraw = regen => {
+      const promise = new Promise((resolve, reject) => {
+        generate(
+          parseInt(el.w.value),
+          parseInt(el.h.value),
+          parseFloat(el.pv.value),
+          parseFloat(el.pm.value),
+          parseInt(el.seed.value),
+          window.innerWidth - 20,
+          window.innerHeight - 20,
+          regen
+        )
+        resolve()
+      })
+      return promise
+    }
+
+    const regenerate = () => {
+      document.location.hash = `#w=${el.w.value};h=${el.h.value};pv=${el.pv.value};pm=${el.pm.value};seed=${el.seed.value}`
+    }
+
+    const onHashChange = (evt) => {
+      const t0 = new Date()
+      redraw(true)
+      .then(() => console.debug(`calculation took ${new Date() - t0} milliseconds.`))
+    }
+
+    const init = () => {
+      el.mazeContainer = document.getElementById('maze-container')
+      el.maze = document.getElementById('maze')
+      el.w = document.getElementById('maze-width')
+      el.w.addEventListener('change', regenerate)
+      el.h = document.getElementById('maze-height')
+      el.h.addEventListener('change', regenerate)
+      el.pv = document.getElementById('pv')
+      el.pv.addEventListener('change', regenerate)
+      el.pm = document.getElementById('pm')
+      el.pm.addEventListener('change', regenerate)
+      el.seed = document.getElementById('seed')
+      el.seed.addEventListener('change', regenerate)
+      window.addEventListener('hashchange', onHashChange)
+      window.addEventListener('resize', () => redraw(false))
+      rng = new MersenneTwister(parseInt(el.seed.value))
+      redraw(true)
+    }
+
+    window.addEventListener('load', init)
+  })(window)
+  </script>
+</head>
+<body>
+  <div class="App">
+    <div>
+      <label for="maze-width">width</label>
+      <input type="number" value="160" id="maze-width" name="maze-width" min="6" step="1" />
+      <label for="maze-height">height</label>
+      <input type="number" value="160" id="maze-height" name="maze-height" min="6" step="1" />
+      <label for="pv">pv</label>
+      <input type="number" value="0.5" id="pv" name="pv" min="0.1" max="1" step="0.1" />
+      <label for="pm">pm</label>
+      <input type="number" value="0.5" id="pm" name="pm" min="0.1" max="1" step="0.1" />
+      <label for="seed">seed</label>
+      <input type="number" value="31337" id="seed" name="seed" min="0" max="9007199254740991" step="1" />
+    </div>
+    <div id="maze-container"><div id="maze"></div></div>
+  </div>
+</body>
+</html>
