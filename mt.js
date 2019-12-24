@@ -1,10 +1,4 @@
 class MersenneTwister {
-  static MAX_INT = 4294967296.0
-  static N = 624
-  static M = 397
-  static UPPER_MASK = 0x80000000
-  static LOWER_MASK = 0x7fffffff
-  static MATRIX_A = 0x9908b0df
   constructor(seed) {
     if (typeof seed !== 'number') {
       seed = new Date().getTime()
@@ -59,3 +53,10 @@ class MersenneTwister {
     return (a * 67108864.0 + b) * (1.0 / Number.MAX_SAFE_INTEGER)
   }
 }
+
+MersenneTwister.MAX_INT = 4294967296.0
+MersenneTwister.N = 624
+MersenneTwister.M = 397
+MersenneTwister.UPPER_MASK = 0x80000000
+MersenneTwister.LOWER_MASK = 0x7fffffff
+MersenneTwister.MATRIX_A = 0x9908b0df
