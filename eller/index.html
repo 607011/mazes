@@ -10,7 +10,7 @@
   <meta name="copyright" content="Oliver Lau">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Eller Maze</title>
-  <script type="text/javascript" src="../cell.js"></script>
+  <script type="text/javascript" src="../maze.js"></script>
   <script type="text/javascript" src="../mt.js"></script>
   <link rel="stylesheet" href="../maze.css">
   <script type="text/javascript">
@@ -18,6 +18,7 @@
       'use strict';
       const el = {}
       let rng
+      let maze
 
       class EllerCell extends Cell {
         constructor(id) {
@@ -46,7 +47,6 @@
          */
          generate1st(p) {
           this.sets = Array.from(Array(this.w)).map((_, i) => [new EllerCell(i)])
-          this.sets[this.sets.length - 1][0].closeRight()
           this.merge(p)
         }
         /**
@@ -87,7 +87,6 @@
           if (newSet.length > 0) {
             this.sets.push(newSet)
           }
-          this.sets[this.sets.length - 1][0].closeRight()
         }
         /**
          * @param {Number} p probability to merge two adjacent (disjunct) sets
@@ -121,24 +120,6 @@
       }
 
       /**
-       * @param {Number} num
-       * @param {Row} row
-       * @param {HTMLElement} mazeEl
-       */
-      const appendRow = (row, mazeEl) => {
-        row.sets.flat().forEach(cell => {
-          const cellEl = document.createElement('div')
-          if (cell.isBlocked(Direction.Bottom)) {
-            cellEl.classList.add('block-bottom')
-          }
-          if (cell.isBlocked(Direction.Right)) {
-            cellEl.classList.add('block-right')
-          }
-          mazeEl.appendChild(cellEl)
-        })
-      }
-
-      /**
        * @param {Number} w
        * @param {Number} h
        * @param {Number} pv
@@ -155,6 +136,7 @@
           mazeEl = document.getElementById('maze')
         }
         else {
+          maze = new Maze(w, h)
           mazeEl = document.createElement('div')
           mazeEl.id = 'maze'
           mazeEl.style.setProperty('--maze-cols', w)
@@ -162,7 +144,7 @@
           let row = new Row(w, 0)
           row.generate1st(pm)
           row.selectDownPaths(pv)
-          appendRow(row, mazeEl)
+          row.sets.flat().forEach((cell, x) => maze.set(x, 0, cell))
           for (let y = 1; y < h; ++y) {
             const nextRow = new Row(w, y)
             nextRow.generate(row)
@@ -170,11 +152,24 @@
             if (y !== h - 1) {
               nextRow.selectDownPaths(pv)
             }
-            appendRow(nextRow, mazeEl)
             row = nextRow
+            row.sets.flat().forEach((cell, x) => maze.set(x, y, cell))
           }
           el.mazeContainer.replaceChild(mazeEl, el.maze)
           el.maze = mazeEl
+          maze.postprocess()
+          for (let y = 0; y < h; ++y) {
+            for (let x = 0; x < w; ++x) {
+              const cell = maze.at(x, y)
+              const cellEl = document.createElement('div')
+              for (const [direction, css] of Object.entries(Maze.CSS)) {
+                if (cell.isBlocked(direction)) {
+                  cellEl.classList.add(css)
+                }
+              }
+              mazeEl.appendChild(cellEl)
+            }
+          }
         }
         mazeEl.style.width = `${w * a}px`
         mazeEl.style.height = `${h * a}px`
@@ -236,9 +231,9 @@
   <div class="App">
     <div id="menu">
       <label for="maze-width">width</label>
-      <input type="number" value="120" id="maze-width" name="maze-width" min="6" step="1" />
+      <input type="number" value="100" id="maze-width" name="maze-width" min="6" step="1" />
       <label for="maze-height">height</label>
-      <input type="number" value="120" id="maze-height" name="maze-height" min="6" step="1" />
+      <input type="number" value="100" id="maze-height" name="maze-height" min="6" step="1" />
       <label for="pv">p<sub>&darr;</sub></label>
       <input type="number" value="0" id="pv" name="pv" min="0" max="0.99" step="0.01" />
       <label for="pm">p<sub>merge</sub></label>

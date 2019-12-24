@@ -30,8 +30,6 @@ input[type=number] {
   row-gap: 0;
   grid-template-rows: repeat(var(--maze-rows), 1fr);
   grid-template-columns: repeat(var(--maze-cols), 1fr);
-  border-left: 1px solid #333;
-  border-top: 1px solid #333;
 }
 #maze > div {
   width: var(--maze-a);
